@@ -42,7 +42,7 @@ const GLchar* flgsource = R"(
     void main(void){
         vec4 A = texture2D(textureA, v_texCoord);
         vec4 B = texture2D(textureB, v_texCoord);
-        gl_FragColor = vec4(1.0,1.0,1.0,0.0);
+        gl_FragColor = A * B;
     }
     )";
 
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
     // create program obj
     auto shaderMng = new shaderManager(vtxsource, flgsource);
     shaderMng->useProgram();
-    auto glslProgram = shaderMng->glslProgram;
+    auto glslProgram = (shaderMng->glslProgram);
 
     // create FBO
     auto FBOMng = new fboManager(uiWidth, uiHeight);
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     }
     auto locA = glGetUniformLocation(glslProgram, "textureA");
     auto texA = new textureManager(texSize, texSize, dataA, GL_TEXTURE0, locA);
-    
+
     auto dataB = new GLubyte[arraySize];
     for (int i = 0; i < arraySize; ++i) {
         dataB[i] = 3*i;
@@ -117,10 +117,10 @@ int main(int argc, char** argv)
 
     // create vertex
     float vertex_position[] = {
-        0.0f,   0.0f,
-        1.0f,   0.f,
-        0.0f,   1.0f,
-        1.0f,   1.0f
+        -1.0f,  -1.0f,
+        1.0f    -1.0f,
+        1.0f,   1.0f,
+        -1.0f,  1.0f
     };
 
     const GLfloat vertex_uv[] = {
@@ -131,16 +131,18 @@ int main(int argc, char** argv)
     };
 
     auto positionLocation = glGetAttribLocation(glslProgram, "v_position");
-    //auto uvLocation       = glGetAttribLocation(glslProgram, "v_uv");
+    auto uvLocation       = glGetAttribLocation(glslProgram, "v_uv");
 
     glEnableVertexAttribArray(positionLocation);
-    //glEnableVertexAttribArray(uvLocation);
+    glEnableVertexAttribArray(uvLocation);
 
     glVertexAttribPointer(positionLocation, 2, GL_FLOAT, false, 0, vertex_position);
-    //glVertexAttribPointer(uvLocation, 2, GL_FLOAT, false, 0, vertex_uv);
+    glVertexAttribPointer(uvLocation, 2, GL_FLOAT, false, 0, vertex_uv);
 
     texA->bind();
     texB->bind();
+
+    glViewport(0, 0, uiWidth, uiHeight);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     GLubyte pixels[texElementSize];

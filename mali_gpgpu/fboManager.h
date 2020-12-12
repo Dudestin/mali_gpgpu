@@ -22,11 +22,11 @@ public:
 		glGenFramebuffers(1, &(this->framebuffer));
 		glGenRenderbuffers(1, &(this->renderbuffer));
 		glBindRenderbuffer(GL_RENDERBUFFER, this->renderbuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8_OES, frameWidth, frameHeight);
-		this->bindFBO();
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8_OES, this->frameWidth, this->frameHeight);
+		glBindFramebuffer(GL_FRAMEBUFFER, this->framebuffer);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-			GL_RENDERBUFFER, renderbuffer);
-		this->clearFBO();
+			GL_RENDERBUFFER, this->renderbuffer);
+		//this->clearFBO();
 	}
 
 	~fboManager()
@@ -60,14 +60,13 @@ public:
 			return status;
 			break;
 		default:
-			std::cerr << "GL_FRAMEBUFFER_IS_NOT_COMPLETE" << std::endl;
+			std::cerr << "GL_FRAMEBUFFER_IS_NOT_COMPLETE!!!!!!!!!!!" << std::endl;
 			return status;
 			break;
 		}
 	}
 
 	inline void clearFBO() const {
-		this->bindFBO();
 		glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
@@ -86,7 +85,6 @@ public:
 		GLsizei width, GLsizei height, GLenum format,
 		GLenum type, void* pixels) const
 	{
-		this->bindFBO();
 		glReadPixels(x, y, width, height, format, type, pixels);
 	}
 
