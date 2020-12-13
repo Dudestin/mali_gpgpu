@@ -1,4 +1,6 @@
 #pragma once
+#include "macro.h"
+
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #include <EGL/egl.h>
@@ -27,13 +29,13 @@ public:
 		GLenum textureUnit,
 		GLint location,
 		GLenum target = GL_TEXTURE_2D,
-		GLenum format = GL_RGBA,
-		GLenum type = GL_UNSIGNED_BYTE)
+		GLenum internalFmt = TEXTURE_FORMAT,
+		GLenum type = TEXTURE_TYPE)
 		: textureWidth{ texWidth },
 		textureHeight{ texHeight },
 		textureUnit{ textureUnit },
 		target{ target },
-		internalFormat{ format },
+		internalFormat{ internalFmt },
 		internalType{ type }
 	{
 		glGenTextures(1, &(this->id));

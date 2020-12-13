@@ -22,11 +22,11 @@ public:
 		glGenFramebuffers(1, &(this->framebuffer));
 		glGenRenderbuffers(1, &(this->renderbuffer));
 		glBindRenderbuffer(GL_RENDERBUFFER, this->renderbuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8_OES, this->frameWidth, this->frameHeight);
+		glRenderbufferStorage(GL_RENDERBUFFER, TEXTURE_INTERNAL_FMT, this->frameWidth, this->frameHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, this->framebuffer);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 			GL_RENDERBUFFER, this->renderbuffer);
-		//this->clearFBO();
+		this->clearFBO();
 	}
 
 	~fboManager()
@@ -92,9 +92,9 @@ public:
 	{
 		GLubyte* pixels{ new GLubyte[4 * frameWidth, frameHeight] };
 		this->readPixels(0, 0, frameWidth, frameHeight,
-			GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+			TEXTURE_FORMAT, TEXTURE_TYPE, pixels);
 		for (unsigned int i = 0; i < frameWidth * frameHeight * 4; i += 4) {
-			printf("|%p %d %d %d %d|\t", &pixels[i],
+			printf("|%p %u %u %u %u|\t", &pixels[i],
 				pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]);
 		}
 		delete[] pixels;

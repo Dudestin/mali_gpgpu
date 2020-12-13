@@ -1,8 +1,9 @@
-﻿#include "mali_gpgpu.h"
+﻿#include <time.h>
+#include "mali_gpgpu.h"
 
-constexpr unsigned int uiWidth = 4;
-constexpr unsigned int uiHeight = 4;
-constexpr GLuint texSize = 4;
+constexpr GLuint texSize = 4096;
+constexpr unsigned int uiWidth = texSize;
+constexpr unsigned int uiHeight = texSize;
 constexpr GLuint texElementSize = 4 * texSize * texSize;
 
 HWND hWindow;
@@ -39,12 +40,17 @@ const GLchar* flgsource = R"(
     varying vec2 v_texCoord;
     uniform sampler2D textureA;
     uniform sampler2D textureB;
+    uniform sampler2D textureC;
+    uniform sampler2D textureD;
     void main(void){
         vec4 A = texture2D(textureA, v_texCoord);
         vec4 B = texture2D(textureB, v_texCoord);
-        gl_FragColor = A + B;
+        vec4 C = texture2D(textureC, v_texCoord);
+        vec4 D = texture2D(textureD, v_texCoord);
+        gl_FragColor = (A * B) + (C * D);
     }
     )";
+
 
 int main(int argc, char** argv)
 {
@@ -67,7 +73,7 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
-    hWindow = create_window(uiWidth, uiHeight);
+    hWindow = create_window(4, 4);
 
     sEGLSurface = EGL_CHECK(eglCreateWindowSurface(sEGLDisplay,
         aEGLConfigs[0], (EGLNativeWindowType)hWindow, NULL));
@@ -101,19 +107,34 @@ int main(int argc, char** argv)
     // create texture
     constexpr GLuint arraySize = texElementSize;
 
-    GLubyte dataA[arraySize];
+    TEXTURE_TYPE_TOKEN* dataA = new TEXTURE_TYPE_TOKEN[arraySize];
     for (int i = 0; i < arraySize; ++i) {
-        dataA[i] = 1 * i;
+        float hoge = i;
+        dataA[i] = i;
     }
     auto locA = glGetUniformLocation(glslProgram, "textureA");
     auto texA = new textureManager(texSize, texSize, dataA, GL_TEXTURE0, locA);
 
-    auto dataB = new GLubyte[arraySize];
+    TEXTURE_TYPE_TOKEN* dataB = new TEXTURE_TYPE_TOKEN[arraySize];
     for (int i = 0; i < arraySize; ++i) {
-        dataB[i] = 3 * i;
+        dataB[i] = i;
     }
     auto locB = glGetUniformLocation(glslProgram, "textureB");
     auto texB = new textureManager(texSize, texSize, dataB, GL_TEXTURE1, locB);
+
+    TEXTURE_TYPE_TOKEN* dataC = new TEXTURE_TYPE_TOKEN[arraySize];
+    for (int i = 0; i < arraySize; ++i) {
+        dataC[i] = i;
+    }
+    auto locC = glGetUniformLocation(glslProgram, "textureC");
+    auto texC = new textureManager(texSize, texSize, dataC, GL_TEXTURE2, locC);
+
+    TEXTURE_TYPE_TOKEN* dataD = new TEXTURE_TYPE_TOKEN[arraySize];
+    for (int i = 0; i < arraySize; ++i) {
+        dataD[i] = i;
+    }
+    auto locD = glGetUniformLocation(glslProgram, "textureD");
+    auto texD = new textureManager(texSize, texSize, dataD, GL_TEXTURE3, locD);
 
     // create vertex
     float vertex_position[] = {
@@ -134,28 +155,46 @@ int main(int argc, char** argv)
     texA->bind();
     texB->bind();
 
-    glViewport(0, 0, 4, 4);
+    glViewport(0, 0, uiWidth, uiHeight);
+    
+    TEXTURE_TYPE_TOKEN* pixels = new TEXTURE_TYPE_TOKEN[texElementSize];
+    double start = clock();
     glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLubyte),
         GL_UNSIGNED_BYTE, indices);
+    FBOMng->readPixels(0, 0, uiWidth, uiHeight, TEXTURE_FORMAT, TEXTURE_TYPE, pixels);
 
-    GLubyte pixels[texElementSize];
-    FBOMng->readPixels(0, 0, uiWidth, uiHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    double end = clock();
+
+    /*
     std::cout << "dataA" << std::endl;
     for (int i = 0; i < texElementSize; i += 4)
-        printf("%p\t%d\t%d\t%d\t%d\n", &dataA[i], dataA[i],
+        printf("%p\t%u\t%u\t%u\t%u\n", &dataA[i], dataA[i],
             dataA[i + 1], dataA[i + 2], dataA[i + 3]);
-    
+
     std::cout << "dataB" << std::endl;
     for (int i = 0; i < texElementSize; i += 4)
-        printf("%p\t%d\t%d\t%d\t%d\n", &dataB[i], dataB[i],
+        printf("%p\t%u\t%u\t%u\t%u\n", &dataB[i], dataB[i],
             dataB[i + 1], dataB[i + 2], dataB[i + 3]);
-            
+
     std::cout << "result" << std::endl;
     for (int i = 0; i < texElementSize; i += 4)
-        printf("%p\t%d\t%d\t%d\t%d\n", &pixels[i], pixels[i],
+        printf("%p\t%u\t%u\t%u\t%u\n", &pixels[i], pixels[i],
             pixels[i + 1], pixels[i + 2], pixels[i + 3]);
+    */
+    
+    std::cout << (end-start)/CLOCKS_PER_SEC << std::endl;
 
-    delete texA, texB;
+    start = clock();
+    TEXTURE_TYPE_TOKEN* comp = new TEXTURE_TYPE_TOKEN[texElementSize];
+    for (int i = 0; i < texElementSize; ++i) {
+        comp[i] = dataA[i] * dataB[i] + dataC[i] * dataD[i];
+    }
+    end = clock();
+    std::cout << (end - start) / CLOCKS_PER_SEC << std::endl;
+
+    delete texA, texB, texC, texD;
+    delete[] dataA, dataB, dataC, dataD;
+    delete[] pixels, comp;
     delete FBOMng;
     delete shaderMng;
     EGL_CHECK(eglMakeCurrent(sEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
