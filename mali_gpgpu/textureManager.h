@@ -22,19 +22,19 @@ class textureManager
 		return this->textureUnit - GL_TEXTURE0;
 	}
 public:
-	textureManager(GLsizei texWidth, GLsizei texHeight, 
+	textureManager(GLsizei texWidth, GLsizei texHeight,
 		const void* pixels,
 		GLenum textureUnit,
 		GLint location,
 		GLenum target = GL_TEXTURE_2D,
-		GLenum format = GL_RGBA, 
+		GLenum format = GL_RGBA,
 		GLenum type = GL_UNSIGNED_BYTE)
-		: textureWidth{texWidth}, 
-		textureHeight{texHeight}, 
-		textureUnit{textureUnit},
-		target{target},
-		internalFormat{ format }, 
-		internalType{type}
+		: textureWidth{ texWidth },
+		textureHeight{ texHeight },
+		textureUnit{ textureUnit },
+		target{ target },
+		internalFormat{ format },
+		internalType{ type }
 	{
 		glGenTextures(1, &(this->id));
 		glActiveTexture(textureUnit);
@@ -45,8 +45,8 @@ public:
 			this->textureWidth, this->textureHeight,
 			0, this->internalFormat, this->internalType, pixels);
 	}
-	
-	~textureManager() 
+
+	~textureManager()
 	{
 		glDeleteTextures(1, &(this->id));
 	}

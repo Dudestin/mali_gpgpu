@@ -81,7 +81,7 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	inline void readPixels(GLint x,GLint y, 
+	inline void readPixels(GLint x, GLint y,
 		GLsizei width, GLsizei height, GLenum format,
 		GLenum type, void* pixels) const
 	{
@@ -94,7 +94,7 @@ public:
 		this->readPixels(0, 0, frameWidth, frameHeight,
 			GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 		for (unsigned int i = 0; i < frameWidth * frameHeight * 4; i += 4) {
-			printf("|%p %d %d %d %d|\t", &pixels[i], 
+			printf("|%p %d %d %d %d|\t", &pixels[i],
 				pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]);
 		}
 		delete[] pixels;
