@@ -1,7 +1,7 @@
 ﻿#include <time.h>
 #include "mali_gpgpu.h"
 
-constexpr GLuint texSize = 4096;
+constexpr GLuint texSize = 660;
 constexpr unsigned int uiWidth = texSize;
 constexpr unsigned int uiHeight = texSize;
 constexpr GLuint texElementSize = 4 * texSize * texSize;
@@ -35,6 +35,7 @@ const GLchar* vtxsource = R"(
         gl_Position = vec4(v_position, 0.0, 1.0);
     }
     )";
+
 const GLchar* flgsource = R"(
     precision lowp float;
     varying vec2 v_texCoord;
@@ -59,7 +60,8 @@ int main(int argc, char** argv)
     EGLSurface	sEGLSurface;
     EGLConfig	aEGLConfigs[1];
     EGLint		cEGLConfigs;
-
+    
+    // Environment Dependent Region Start
     hDisplay = EGL_DEFAULT_DISPLAY;
 
     sEGLDisplay = EGL_CHECK(eglGetDisplay(hDisplay));
@@ -78,6 +80,7 @@ int main(int argc, char** argv)
     sEGLSurface = EGL_CHECK(eglCreateWindowSurface(sEGLDisplay,
         aEGLConfigs[0], (EGLNativeWindowType)hWindow, NULL));
 
+    // end Environment Dependent Region End
     if (sEGLSurface == EGL_NO_SURFACE)
     {
         printf("Failed to create EGL surface.\n");
