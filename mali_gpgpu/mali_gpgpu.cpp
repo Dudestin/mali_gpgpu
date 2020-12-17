@@ -120,12 +120,12 @@ int main(int argc, char** argv)
     eglMakeCurrent(sEGLDisplay, sEGLSurface, sEGLSurface, sEGLContext);
 
     // create program obj
-    auto shaderMng = new shaderManager(vtxsource, flgsource);
+    auto shaderMng = std::make_unique<shaderManager>(vtxsource, flgsource);
     shaderMng->useProgram();
     auto glslProgram = (shaderMng->glslProgram);
 
     // create FBO
-    auto FBOMng = new fboManager(uiWidth, uiHeight);
+    auto FBOMng = std::make_unique<fboManager>(uiWidth, uiHeight);
     fboManager::checkCurrentFBOStatus(); // check status
 
     // create texture
@@ -137,28 +137,28 @@ int main(int argc, char** argv)
         dataA[i] = i;
     }
     auto locA = glGetUniformLocation(glslProgram, "textureA");
-    auto texA = new textureManager(texSize, texSize, dataA, GL_TEXTURE0, locA);
+    auto texA = std::make_unique<textureManager>(texSize, texSize, dataA, GL_TEXTURE0, locA);
 
     TEXTURE_TYPE_TOKEN* dataB = new TEXTURE_TYPE_TOKEN[arraySize];
     for (int i = 0; i < arraySize; ++i) {
         dataB[i] = i;
     }
     auto locB = glGetUniformLocation(glslProgram, "textureB");
-    auto texB = new textureManager(texSize, texSize, dataB, GL_TEXTURE1, locB);
+    auto texB = std::make_unique<textureManager>(texSize, texSize, dataB, GL_TEXTURE1, locB);
 
     TEXTURE_TYPE_TOKEN* dataC = new TEXTURE_TYPE_TOKEN[arraySize];
     for (int i = 0; i < arraySize; ++i) {
         dataC[i] = i;
     }
     auto locC = glGetUniformLocation(glslProgram, "textureC");
-    auto texC = new textureManager(texSize, texSize, dataC, GL_TEXTURE2, locC);
+    auto texC = std::make_unique<textureManager>(texSize, texSize, dataC, GL_TEXTURE2, locC);
 
     TEXTURE_TYPE_TOKEN* dataD = new TEXTURE_TYPE_TOKEN[arraySize];
     for (int i = 0; i < arraySize; ++i) {
         dataD[i] = i;
     }
     auto locD = glGetUniformLocation(glslProgram, "textureD");
-    auto texD = new textureManager(texSize, texSize, dataD, GL_TEXTURE3, locD);
+    auto texD = std::make_unique<textureManager>(texSize, texSize, dataD, GL_TEXTURE3, locD);
 
     // create vertex
     float vertex_position[] = {
@@ -216,11 +216,11 @@ int main(int argc, char** argv)
     end = clock();
     std::cout << (end - start) / CLOCKS_PER_SEC << std::endl;
 
-    delete texA, texB, texC, texD;
+    texA.reset(); texB.reset(); texC.reset(); texD.reset();
     delete[] dataA, dataB, dataC, dataD;
     delete[] pixels, comp;
-    delete FBOMng;
-    delete shaderMng;
+    FBOMng.reset();
+    shaderMng.reset();
     EGL_CHECK(eglMakeCurrent(sEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
     EGL_CHECK(eglDestroySurface(sEGLDisplay, sEGLSurface));
     EGL_CHECK(eglDestroyContext(sEGLDisplay, sEGLContext));
