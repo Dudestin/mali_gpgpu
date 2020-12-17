@@ -37,7 +37,7 @@ const GLchar* vtxsource = R"(
     )";
 
 const GLchar* flgsource = R"(
-    #define EPS 1.0/256.0
+    #define EPS 1.0/255.0
     precision lowp float;
     varying vec2 v_texCoord;
     uniform sampler2D textureA;
@@ -68,7 +68,7 @@ const GLchar* flgsource = R"(
         // restor signed value
         vec4 svec1 = u2s(A);
         vec4 svec2 = u2s(B);
-        // vec4 sigmoid = vec4(1.0)/(vec4(1.0)+exp(-A)); // 0 < x < 128
+        // vec4 sigmoid = vec4(1.0)/(1.0+exp(-A)); // 0 < x < 128
         gl_FragColor = s2u(svec1 + svec2);
     }
     )";
