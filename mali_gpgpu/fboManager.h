@@ -14,10 +14,11 @@ class fboManager
 	GLuint renderbuffer;
 	const GLsizei frameWidth;
 	const GLsizei frameHeight;
+	const GLsizei frameElementSize;
 
 public:
 	fboManager(GLuint frameWidth, GLuint frameHeight)
-		: frameWidth(frameWidth), frameHeight(frameHeight)
+		: frameWidth(frameWidth), frameHeight(frameHeight), frameElementSize(frameHeight * frameWidth * 4)
 	{
 		glGenFramebuffers(1, &(this->framebuffer));
 		glGenRenderbuffers(1, &(this->renderbuffer));
@@ -93,7 +94,7 @@ public:
 		GLubyte* pixels{ new GLubyte[4 * frameWidth, frameHeight] };
 		this->readPixels(0, 0, frameWidth, frameHeight,
 			TEXTURE_FORMAT, TEXTURE_TYPE, pixels);
-		for (int i = 0; i < texElementSize; i += 4)
+		for (int i = 0; i < frameElementSize; i += 4)
 			printf("%p\t%d\t%d\t%d\t%d\n", &pixels[i], pixels[i],
 				pixels[i + 1], pixels[i + 2], pixels[i + 3]);
 		delete[] pixels;
