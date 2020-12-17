@@ -2,7 +2,7 @@
 typedef unsigned short hfloat;
 
 #define TEXTURE_TYPE GL_UNSIGNED_BYTE
-#define TEXTURE_TYPE_TOKEN GLubyte
+#define TEXTURE_TYPE_TOKEN GLbyte
 #define TEXTURE_INTERNAL_FMT GL_RGBA8_OES
 #define TEXTURE_FORMAT GL_RGBA
 

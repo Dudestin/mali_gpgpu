@@ -1,7 +1,7 @@
 ﻿#include <time.h>
 #include "mali_gpgpu.h"
 
-constexpr GLuint texSize = 660;
+constexpr GLuint texSize = 8;
 constexpr unsigned int uiWidth = texSize;
 constexpr unsigned int uiHeight = texSize;
 constexpr GLuint texElementSize = 4 * texSize * texSize;
@@ -37,18 +37,39 @@ const GLchar* vtxsource = R"(
     )";
 
 const GLchar* flgsource = R"(
+    #define EPS 1.0/256.0
     precision lowp float;
     varying vec2 v_texCoord;
     uniform sampler2D textureA;
     uniform sampler2D textureB;
     uniform sampler2D textureC;
     uniform sampler2D textureD;
+
+    vec4 u2s(vec4 uvec){
+        // convert normalized unsigned value [0, 1] into signed value [-0.5,0.5] 
+        bvec4 isMinus = greaterThan(uvec, vec4(0.5));
+        vec4 signed = (uvec - vec4(isMinus));
+        return signed;
+    }
+    
+    vec4 s2u(vec4 svec){
+        // convert [-0.5,0.5] signed value into unsigned value [0,1]    
+        bvec4 isMinus = lessThan(svec, vec4(0));
+        vec4 uns = (svec + vec4(isMinus));
+        return uns;
+    }
+
     void main(void){
         vec4 A = texture2D(textureA, v_texCoord);
         vec4 B = texture2D(textureB, v_texCoord);
         vec4 C = texture2D(textureC, v_texCoord);
         vec4 D = texture2D(textureD, v_texCoord);
-        gl_FragColor = (A * B) + (C * D);
+        // sigmoid
+        // restor signed value
+        vec4 svec1 = u2s(A);
+        vec4 svec2 = u2s(B);
+        // vec4 sigmoid = vec4(1.0)/(vec4(1.0)+exp(-A)); // 0 < x < 128
+        gl_FragColor = s2u(svec1 + svec2);
     }
     )";
 
@@ -168,22 +189,22 @@ int main(int argc, char** argv)
 
     double end = clock();
 
-    /*
+    
     std::cout << "dataA" << std::endl;
     for (int i = 0; i < texElementSize; i += 4)
-        printf("%p\t%u\t%u\t%u\t%u\n", &dataA[i], dataA[i],
+        printf("%p\t%d\t%d\t%d\t%d\n", &dataA[i], dataA[i],
             dataA[i + 1], dataA[i + 2], dataA[i + 3]);
 
     std::cout << "dataB" << std::endl;
     for (int i = 0; i < texElementSize; i += 4)
-        printf("%p\t%u\t%u\t%u\t%u\n", &dataB[i], dataB[i],
+        printf("%p\t%d\t%d\t%d\t%d\n", &dataB[i], dataB[i],
             dataB[i + 1], dataB[i + 2], dataB[i + 3]);
 
     std::cout << "result" << std::endl;
     for (int i = 0; i < texElementSize; i += 4)
-        printf("%p\t%u\t%u\t%u\t%u\n", &pixels[i], pixels[i],
+        printf("%p\t%d\t%d\t%d\t%d\n", &pixels[i], pixels[i],
             pixels[i + 1], pixels[i + 2], pixels[i + 3]);
-    */
+    
     
     std::cout << (end-start)/CLOCKS_PER_SEC << std::endl;
 
