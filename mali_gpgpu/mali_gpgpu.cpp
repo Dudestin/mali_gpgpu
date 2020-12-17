@@ -38,6 +38,7 @@ const GLchar* vtxsource = R"(
 
 const GLchar* flgsource = R"(
     #define EPS 1.0/255.0
+    #define SIGMOID_COEF 6.0
     precision lowp float;
     varying vec2 v_texCoord;
     uniform sampler2D textureA;
@@ -46,30 +47,37 @@ const GLchar* flgsource = R"(
     uniform sampler2D textureD;
 
     vec4 u2s(vec4 uvec){
-        // convert normalized unsigned value [0, 1] into signed value [-0.5,0.5] 
+        // convert normalized unsigned value [0, 1] into signed value [-1.0, 1.0]
         bvec4 isMinus = greaterThan(uvec, vec4(0.5));
         vec4 signed = (uvec - vec4(isMinus));
-        return signed;
+        return signed * 2.0; // normalized value
     }
     
     vec4 s2u(vec4 svec){
-        // convert [-0.5,0.5] signed value into unsigned value [0,1]    
-        bvec4 isMinus = lessThan(svec, vec4(0));
-        vec4 uns = (svec + vec4(isMinus));
-        return uns;
+        // convert [-1.0, 1.0] signed value into unsigned value [0, 1]
+        bvec4 isMinus = lessThan(svec, vec4(0.0));
+        vec4 uns = (svec / 2.0 + vec4(isMinus));
+        return uns; // [0.0, 1.0]
+    }
+
+    vec4 sigmoid(vec4 v){
+        return 1.0 / (1.0 + exp( -SIGMOID_COEF * v));
     }
 
     void main(void){
-        vec4 A = texture2D(textureA, v_texCoord);
-        vec4 B = texture2D(textureB, v_texCoord);
-        vec4 C = texture2D(textureC, v_texCoord);
-        vec4 D = texture2D(textureD, v_texCoord);
-        // sigmoid
-        // restor signed value
-        vec4 svec1 = u2s(A);
-        vec4 svec2 = u2s(B);
-        // vec4 sigmoid = vec4(1.0)/(1.0+exp(-A)); // 0 < x < 128
-        gl_FragColor = s2u(svec1 + svec2);
+        // aggregation procedure
+        vec4 segTex0 = u2s(texture2D(textureA, v_texCoord));
+        vec4 segTex1 = u2s(texture2D(textureB, v_texCoord));
+        vec4 detTex0 = u2s(texture2D(textureC, v_texCoord));
+        vec4 detTex1 = u2s(texture2D(textureD, v_texCoord));
+        // segment-branch-prepare
+        vec4 sigmoid_segTex0 = sigmoid(segTex0); // [-1.0, 1.0] -> [0.0, 1.0]
+        vec4 sigmoid_segTex1 = sigmoid(segTex1);
+        // aggregationd
+        vec4 mul0 = sigmoid_segTex0 * detTex0; // [-1.0, 1.0] * [-1.0, 1.0] = [-1.0, 1.0]
+        vec4 mul1 = sigmoid_segTex1 * detTex1;
+        vec4 result = mul0 + mul1; // [-1.0, 1.0] + [-1.0, 1.0] = [-2.0, 2.0]
+        gl_FragColor = s2u(result / 2.0);
     }
     )";
 
@@ -131,34 +139,34 @@ int main(int argc, char** argv)
     // create texture
     constexpr GLuint arraySize = texElementSize;
 
-    TEXTURE_TYPE_TOKEN* dataA = new TEXTURE_TYPE_TOKEN[arraySize];
+    std::unique_ptr<TEXTURE_TYPE_TOKEN[]> dataA(new TEXTURE_TYPE_TOKEN[arraySize]);
     for (int i = 0; i < arraySize; ++i) {
         float hoge = i;
         dataA[i] = i;
     }
     auto locA = glGetUniformLocation(glslProgram, "textureA");
-    auto texA = std::make_unique<textureManager>(texSize, texSize, dataA, GL_TEXTURE0, locA);
+    auto texA = std::make_unique<textureManager>(texSize, texSize, dataA.get(), GL_TEXTURE0, locA);
 
-    TEXTURE_TYPE_TOKEN* dataB = new TEXTURE_TYPE_TOKEN[arraySize];
+    std::unique_ptr<TEXTURE_TYPE_TOKEN[]> dataB(new TEXTURE_TYPE_TOKEN[arraySize]);
     for (int i = 0; i < arraySize; ++i) {
         dataB[i] = i;
     }
     auto locB = glGetUniformLocation(glslProgram, "textureB");
-    auto texB = std::make_unique<textureManager>(texSize, texSize, dataB, GL_TEXTURE1, locB);
+    auto texB = std::make_unique<textureManager>(texSize, texSize, dataB.get(), GL_TEXTURE1, locB);
 
-    TEXTURE_TYPE_TOKEN* dataC = new TEXTURE_TYPE_TOKEN[arraySize];
+    std::unique_ptr<TEXTURE_TYPE_TOKEN[]> dataC(new TEXTURE_TYPE_TOKEN[arraySize]);
     for (int i = 0; i < arraySize; ++i) {
         dataC[i] = i;
     }
     auto locC = glGetUniformLocation(glslProgram, "textureC");
-    auto texC = std::make_unique<textureManager>(texSize, texSize, dataC, GL_TEXTURE2, locC);
+    auto texC = std::make_unique<textureManager>(texSize, texSize, dataC.get(), GL_TEXTURE2, locC);
 
-    TEXTURE_TYPE_TOKEN* dataD = new TEXTURE_TYPE_TOKEN[arraySize];
+    std::unique_ptr<TEXTURE_TYPE_TOKEN[]> dataD(new TEXTURE_TYPE_TOKEN[arraySize]);
     for (int i = 0; i < arraySize; ++i) {
         dataD[i] = i;
     }
     auto locD = glGetUniformLocation(glslProgram, "textureD");
-    auto texD = std::make_unique<textureManager>(texSize, texSize, dataD, GL_TEXTURE3, locD);
+    auto texD = std::make_unique<textureManager>(texSize, texSize, dataD.get(), GL_TEXTURE3, locD);
 
     // create vertex
     float vertex_position[] = {
@@ -180,12 +188,12 @@ int main(int argc, char** argv)
     texB->bind();
 
     glViewport(0, 0, uiWidth, uiHeight);
-    
-    TEXTURE_TYPE_TOKEN* pixels = new TEXTURE_TYPE_TOKEN[texElementSize];
+
+    std::unique_ptr<TEXTURE_TYPE_TOKEN[]> pixels(new TEXTURE_TYPE_TOKEN[arraySize]);
     double start = clock();
     glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLubyte),
         GL_UNSIGNED_BYTE, indices);
-    FBOMng->readPixels(0, 0, uiWidth, uiHeight, TEXTURE_FORMAT, TEXTURE_TYPE, pixels);
+    FBOMng->readPixels(0, 0, uiWidth, uiHeight, TEXTURE_FORMAT, TEXTURE_TYPE, pixels.get());
 
     double end = clock();
 
@@ -209,16 +217,14 @@ int main(int argc, char** argv)
     std::cout << (end-start)/CLOCKS_PER_SEC << std::endl;
 
     start = clock();
-    TEXTURE_TYPE_TOKEN* comp = new TEXTURE_TYPE_TOKEN[texElementSize];
+    std::unique_ptr<TEXTURE_TYPE_TOKEN[]> comp(new TEXTURE_TYPE_TOKEN[arraySize]);
     for (int i = 0; i < texElementSize; ++i) {
-        comp[i] = dataA[i] * dataB[i] + dataC[i] * dataD[i];
+        comp[i] = dataA[i] * dataB[i];
     }
     end = clock();
     std::cout << (end - start) / CLOCKS_PER_SEC << std::endl;
 
     texA.reset(); texB.reset(); texC.reset(); texD.reset();
-    delete[] dataA, dataB, dataC, dataD;
-    delete[] pixels, comp;
     FBOMng.reset();
     shaderMng.reset();
     EGL_CHECK(eglMakeCurrent(sEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
