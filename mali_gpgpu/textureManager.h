@@ -5,10 +5,8 @@
 #include <GLES2/gl2ext.h>
 #include <EGL/egl.h>
 
-#include <vector>
+#include <array>
 #include <mutex>
-
-#define TEXTURE_UNIT_NUM 32
 
 class textureManager
 {
@@ -46,11 +44,6 @@ public:
 		glTexImage2D(this->target, 0, this->internalFormat,
 			this->textureWidth, this->textureHeight,
 			0, this->internalFormat, this->internalType, pixels);
-	}
-
-	~textureManager()
-	{
-		glDeleteTextures(1, &(this->id));
 	}
 
 	inline void setTexParameter() {
