@@ -93,10 +93,9 @@ public:
 		GLubyte* pixels{ new GLubyte[4 * frameWidth, frameHeight] };
 		this->readPixels(0, 0, frameWidth, frameHeight,
 			TEXTURE_FORMAT, TEXTURE_TYPE, pixels);
-		for (unsigned int i = 0; i < frameWidth * frameHeight * 4; i += 4) {
-			printf("|%p %u %u %u %u|\t", &pixels[i],
-				pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]);
-		}
+		for (int i = 0; i < texElementSize; i += 4)
+			printf("%p\t%d\t%d\t%d\t%d\n", &pixels[i], pixels[i],
+				pixels[i + 1], pixels[i + 2], pixels[i + 3]);
 		delete[] pixels;
 	}
 };
